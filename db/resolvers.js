@@ -389,7 +389,7 @@ const resolvers = {
           };
 
           insertFollower = {
-            follow_iduser: ctx.usuario.id,
+            follower_iduser: ctx.usuario.id,
           };
 
           const buscarfollow = await Follows.find({
@@ -410,7 +410,7 @@ const resolvers = {
 
             seguidor = await Followers.updateOne(
               { iduser: iduser },
-              { $push: { follows: insertFollower } }
+              { $push: { followers: insertFollower } }
             );
             return "Has seguido a alguien";
           } else {
@@ -438,15 +438,29 @@ const resolvers = {
         if (buscarfollow.length === 0 && buscarfollower.length === 0) {
           throw new Error("El seguimiento no existe");
         } else {
-          await Follows.findOneAndDelete({
-            iduser: ctx.usuario.id,
-            "follows.follow_iduser": iduser,
-          });
+          unFollow = {
+            follow_iduser: iduser,
+          };
 
-          await Followers.findOneAndDelete({
-            iduser: iduser,
-            "followers.follower_iduser": ctx.usuario.id,
-          });
+          unFollower = {
+            follower_iduser: ctx.usuario.id,
+          };
+
+          await Follows.findOneAndUpdate(
+            {
+              iduser: ctx.usuario.id,
+              "follows.follow_iduser": iduser,
+            },
+            { $pull: { follows: unFollow } }
+          );
+
+          await Followers.findOneAndUpdate(
+            {
+              iduser: iduser,
+              "followers.follower_iduser": ctx.usuario.id,
+            },
+            { $pull: { followers: unFollower } }
+          );
 
           return "Seguimiento Eliminado";
         }
