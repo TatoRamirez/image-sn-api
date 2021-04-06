@@ -8,9 +8,9 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config({ path: ".env" });
 
 const crearToken = (usuario, secreto, expiresIn) => {
-  const { id, user, personalemail, name, lastname } = usuario;
+  const { id, user, image, personalemail, name, lastname } = usuario;
 
-  return jwt.sign({ id, user, personalemail, name, lastname }, secreto, {
+  return jwt.sign({ id, user, image, personalemail, name, lastname }, secreto, {
     expiresIn,
   });
 };
@@ -105,6 +105,23 @@ const resolvers = {
 
           const follows = await Followers.find({
             iduser: User && User.id,
+          });
+          return follows;
+        } catch (error) {
+          console.log("Error: ", error);
+        }
+      } else {
+        return [];
+      }
+    },
+
+    /*------------------Query de MyFollowers------------------*/
+
+    getMyFollowers: async (_, {}, ctx) => {
+      if (ctx.usuario) {
+        try {
+          const follows = await Follows.find({
+            iduser: ctx.usuario.id,
           });
           return follows;
         } catch (error) {
@@ -321,7 +338,6 @@ const resolvers = {
           }
           return "Corazón dado";
         } else {
-          const { idpost } = input;
           inserthearth = {
             iduser: ctx.usuario.id,
           };
@@ -340,6 +356,33 @@ const resolvers = {
           } else {
             throw new Error("Ya le has dado corazón a esta publicación");
           }
+        }
+      }
+    },
+
+    deleteHearth: async (_, { input }, ctx) => {
+      if (ctx.usuario) {
+        const { idpost } = input;
+
+        //Revsar si existe
+        const buscarHearth = await Hearths.find({
+          idpost: idpost,
+          "UsersLikes.iduser": ctx.usuario.id,
+        });
+
+        if (buscarHearth.length === 0) {
+          throw new Error("No le has dado corazón");
+        } else {
+          delHearth = {
+            iduser: ctx.usuario.id,
+          };
+
+          await Hearths.findOneAndUpdate(
+            { idpost: idpost },
+            { $pull: { UsersLikes: delHearth } }
+          );
+
+          return "Corazón Eliminado";
         }
       }
     },
