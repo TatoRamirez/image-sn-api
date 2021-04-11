@@ -135,7 +135,7 @@ const typeDefs = gql`
   type Mutation {
     authUser(input: AuthUserInput): Token
 
-    newUser(input: UserInput): User
+    newUser(input: UserInput): Token
     updateUser(id: ID!, input: UserInput): User
     deleteUser(id: ID!): String
 

@@ -161,7 +161,7 @@ const resolvers = {
       if (!passwordCorrecto) {
         throw new Error("La contraseña es incorrecta");
       }
-
+      
       //Crear Token
       return {
         token: crearToken(existeUsuario, process.env.SECRET, "24h"),
@@ -184,17 +184,18 @@ const resolvers = {
       }
 
       try {
-        if (input.password !== "") {
-          //Encriptar contraseña
-          const salt = await bcryptjs.genSalt(10);
-          input.password = await bcryptjs.hash(input.password, salt);
-        }
+        //Encriptar contraseña
+        const salt = await bcryptjs.genSalt(10);
+        input.password = await bcryptjs.hash(input.password, salt);
 
         //Guardar en la base de datos
         const users = new Users(input);
         users.save();
 
-        return users;
+        //Loggeo Automático
+        return {
+          token: crearToken(users, process.env.SECRET, "24h"),
+        };
       } catch (error) {
         console.log("Error: ", error);
       }
@@ -402,14 +403,8 @@ const resolvers = {
           iduser: iduser,
         });
 
-        if (buscarFollow.length === 0 && buscarFollower.length === 0) {
+        if (buscarFollower.length === 0) {
           try {
-            const insertFollow = {
-              iduser: ctx.usuario.id,
-              follows: {
-                follow_iduser: iduser,
-              },
-            };
             const insertFollower = {
               iduser: iduser,
               followers: {
@@ -417,22 +412,48 @@ const resolvers = {
               },
             };
 
-            const follow = new Follows(insertFollow);
-            follow.save();
-
             const follower = new Followers(insertFollower);
             follower.save();
           } catch (error) {
             console.log("error:", error);
           }
-          return "Has seguido a alguien";
+        } else {
+          insertFollower = {
+            follower_iduser: ctx.usuario.id,
+          };
+
+          const buscarfollower = await Followers.find({
+            iduser: iduser,
+            "followers.follower_iduser": ctx.usuario.id,
+          });
+
+          if (buscarfollower.length === 0) {
+            seguidor = await Followers.updateOne(
+              { iduser: iduser },
+              { $push: { followers: insertFollower } }
+            );
+          } else {
+            throw new Error("Ya has seguido a esta persona");
+          }
+        }
+
+        if (buscarFollow.length === 0) {
+          try {
+            const insertFollow = {
+              iduser: ctx.usuario.id,
+              follows: {
+                follow_iduser: iduser,
+              },
+            };
+
+            const follow = new Follows(insertFollow);
+            follow.save();
+          } catch (error) {
+            console.log("error:", error);
+          }
         } else {
           insertFollow = {
             follow_iduser: iduser,
-          };
-
-          insertFollower = {
-            follower_iduser: ctx.usuario.id,
           };
 
           const buscarfollow = await Follows.find({
@@ -440,22 +461,11 @@ const resolvers = {
             "follows.follow_iduser": iduser,
           });
 
-          const buscarfollower = await Followers.find({
-            iduser: iduser,
-            "followers.follower_iduser": ctx.usuario.id,
-          });
-
-          if (buscarfollow.length === 0 && buscarfollower.length === 0) {
+          if (buscarfollow.length === 0) {
             seguido = await Follows.updateOne(
               { iduser: ctx.usuario.id },
               { $push: { follows: insertFollow } }
             );
-
-            seguidor = await Followers.updateOne(
-              { iduser: iduser },
-              { $push: { followers: insertFollower } }
-            );
-            return "Has seguido a alguien";
           } else {
             throw new Error("Ya has seguido a esta persona");
           }

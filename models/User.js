@@ -27,7 +27,6 @@ const UserSchema = mongoose.Schema({
   },
   birthdate: {
     type: Date,
-    required: true,
     trim: true,
   },
   personalemail: {
@@ -62,7 +61,7 @@ const UserSchema = mongoose.Schema({
   },
   terms: {
     type: Boolean,
-    default: false,
+    default: true,
   },
 });
 
