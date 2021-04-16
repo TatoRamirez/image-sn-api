@@ -29,6 +29,10 @@ const UserSchema = mongoose.Schema({
     type: Date,
     trim: true,
   },
+  genre: {
+    type: String,
+    trim: true,
+  },
   personalemail: {
     type: String,
     required: true,

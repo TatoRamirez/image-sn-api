@@ -11,6 +11,7 @@ const typeDefs = gql`
     lastname: String
     userdesc: String
     birthdate: String
+    genre: String
     personalemail: String
     phone: String
     nationality: String
@@ -28,6 +29,7 @@ const typeDefs = gql`
     lastname: String
     userdesc: String
     birthdate: String
+    genre: String
     personalemail: String
     phone: String
     nationality: String
@@ -136,7 +138,7 @@ const typeDefs = gql`
     authUser(input: AuthUserInput): Token
 
     newUser(input: UserInput): Token
-    updateUser(id: ID!, input: UserInput): User
+    updateUser(input: UserInput): User
     deleteUser(id: ID!): String
 
     newPost(input: PostInput): String

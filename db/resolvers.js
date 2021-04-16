@@ -8,11 +8,39 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config({ path: ".env" });
 
 const crearToken = (usuario, secreto, expiresIn) => {
-  const { id, user, image, personalemail, name, lastname } = usuario;
+  const {
+    id,
+    user,
+    image,
+    userdesc,
+    personalemail,
+    phone,
+    genre,
+    nationality,
+    name,
+    lastname,
+    birthdate,
+  } = usuario;
 
-  return jwt.sign({ id, user, image, personalemail, name, lastname }, secreto, {
-    expiresIn,
-  });
+  return jwt.sign(
+    {
+      id,
+      user,
+      image,
+      userdesc,
+      personalemail,
+      phone,
+      genre,
+      nationality,
+      name,
+      lastname,
+      birthdate,
+    },
+    secreto,
+    {
+      expiresIn,
+    }
+  );
 };
 
 //Resolver
@@ -161,7 +189,7 @@ const resolvers = {
       if (!passwordCorrecto) {
         throw new Error("La contraseña es incorrecta");
       }
-      
+
       //Crear Token
       return {
         token: crearToken(existeUsuario, process.env.SECRET, "24h"),
@@ -201,24 +229,29 @@ const resolvers = {
       }
     },
 
-    updateUser: async (_, { id, input }, ctx) => {
+    updateUser: async (_, { input }, ctx) => {
       if (ctx.usuario) {
+        const { password } = input;
+
         //Revsar si existe
-        let users = await Users.findById(id);
+        let users = await Users.findById(ctx.usuario.id);
+
+        console.log("input: ", input);
 
         if (!users) {
           throw new Error("Usuario no existe");
         }
 
-        //Encriptar contraseña
-        const { password } = input;
-        const salt = await bcryptjs.genSalt(10);
-        input.password = await bcryptjs.hash(password, salt);
+        if (password !== "") {
+          //Encriptar contraseña
+          const salt = await bcryptjs.genSalt(10);
+          input.password = await bcryptjs.hash(password, salt);
+        }
 
         input.modifieddate = Date.now();
 
         //Guardarlo en la base de datos
-        users = await Users.findOneAndUpdate({ _id: id }, input, {
+        users = await Users.findOneAndUpdate({ _id: ctx.usuario.id }, input, {
           new: true,
         });
 
@@ -394,7 +427,6 @@ const resolvers = {
       if (ctx.usuario) {
         const { iduser } = input;
 
-        //Verificar si se a registrado algún Seguidor en el usuario
         const buscarFollow = await Follows.find({
           iduser: ctx.usuario.id,
         });
@@ -402,40 +434,6 @@ const resolvers = {
         const buscarFollower = await Followers.find({
           iduser: iduser,
         });
-
-        if (buscarFollower.length === 0) {
-          try {
-            const insertFollower = {
-              iduser: iduser,
-              followers: {
-                follower_iduser: ctx.usuario.id,
-              },
-            };
-
-            const follower = new Followers(insertFollower);
-            follower.save();
-          } catch (error) {
-            console.log("error:", error);
-          }
-        } else {
-          insertFollower = {
-            follower_iduser: ctx.usuario.id,
-          };
-
-          const buscarfollower = await Followers.find({
-            iduser: iduser,
-            "followers.follower_iduser": ctx.usuario.id,
-          });
-
-          if (buscarfollower.length === 0) {
-            seguidor = await Followers.updateOne(
-              { iduser: iduser },
-              { $push: { followers: insertFollower } }
-            );
-          } else {
-            throw new Error("Ya has seguido a esta persona");
-          }
-        }
 
         if (buscarFollow.length === 0) {
           try {
@@ -465,6 +463,40 @@ const resolvers = {
             seguido = await Follows.updateOne(
               { iduser: ctx.usuario.id },
               { $push: { follows: insertFollow } }
+            );
+          } else {
+            throw new Error("Ya has seguido a esta persona");
+          }
+        }
+
+        if (buscarFollower.length === 0) {
+          try {
+            const insertFollower = {
+              iduser: iduser,
+              followers: {
+                follower_iduser: ctx.usuario.id,
+              },
+            };
+
+            const follower = new Followers(insertFollower);
+            follower.save();
+          } catch (error) {
+            console.log("error:", error);
+          }
+        } else {
+          insertFollower = {
+            follower_iduser: ctx.usuario.id,
+          };
+
+          const buscarfollower = await Followers.find({
+            iduser: iduser,
+            "followers.follower_iduser": ctx.usuario.id,
+          });
+
+          if (buscarfollower.length === 0) {
+            seguidor = await Followers.updateOne(
+              { iduser: iduser },
+              { $push: { followers: insertFollower } }
             );
           } else {
             throw new Error("Ya has seguido a esta persona");

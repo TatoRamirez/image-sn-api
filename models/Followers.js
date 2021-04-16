@@ -15,7 +15,6 @@ const FollowsSchema = mongoose.Schema(
   {
     iduser: {
       type: String,
-      unique: true,
       trim: true,
     },
     followers: [follower],
