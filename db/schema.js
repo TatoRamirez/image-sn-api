@@ -138,7 +138,7 @@ const typeDefs = gql`
     authUser(input: AuthUserInput): Token
 
     newUser(input: UserInput): Token
-    updateUser(input: UserInput): User
+    updateUser(input: UserInput): Token
     deleteUser(id: ID!): String
 
     newPost(input: PostInput): String

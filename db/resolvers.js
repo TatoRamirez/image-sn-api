@@ -236,13 +236,11 @@ const resolvers = {
         //Revsar si existe
         let users = await Users.findById(ctx.usuario.id);
 
-        console.log("input: ", input);
-
         if (!users) {
           throw new Error("Usuario no existe");
         }
 
-        if (password !== "") {
+        if (password !== undefined) {
           //Encriptar contraseña
           const salt = await bcryptjs.genSalt(10);
           input.password = await bcryptjs.hash(password, salt);
@@ -255,7 +253,10 @@ const resolvers = {
           new: true,
         });
 
-        return users;
+        //Refresca el token
+        return {
+          token: crearToken(users, process.env.SECRET, "24h"),
+        };
       }
     },
 
